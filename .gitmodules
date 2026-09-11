@@ -1,0 +1,12 @@
+[submodule "deps/Pattern16"]
+	path = deps/Pattern16
+	url = https://github.com/Dasaav-dsv/Pattern16.git
+[submodule "deps/inicpp"]
+	path = deps/inicpp
+	url = https://github.com/dujingning/inicpp.git
+[submodule "deps/common"]
+	path = deps/common
+	url = https://github.com/ianpatt/common.git
+[submodule "deps/skse64"]
+	path = deps/skse64
+	url = https://github.com/ianpatt/skse64.git

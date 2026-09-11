@@ -1,0 +1,47 @@
+name: MSBuild
+description: "Builds NoLockpickActivate via its MSBuild scripts"
+outputs:
+  release-tag:
+    value: ${{ steps.collect_version.outputs.tag }}
+  build-artifact-name:
+    value: ${{ env.PROJECT_NAME }}_${{ steps.collect_version.outputs.tag }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v3
+      
+    - name: Collect mod version
+      id: collect_version
+      shell: pwsh
+      run: |
+        $content = Get-Content -Path "include/NLA_Version.hpp" -Raw
+        $MAJOR = [regex]::Match($content, '#define NLA_VERSION_MAJOR\s+(\d+)').Groups[1].Value
+        $MINOR = [regex]::Match($content, '#define NLA_VERSION_MINOR\s+(\d+)').Groups[1].Value
+        $PATCH = [regex]::Match($content, '#define NLA_VERSION_PATCH\s+(\d+)').Groups[1].Value
+        $HOTFIX = [regex]::Match($content, '#define NLA_VERSION_HOTFIX\s+(\d+)').Groups[1].Value
+
+        $VERSION = "$MAJOR.$MINOR.$PATCH"
+        $TAG= "v$VERSION"
+        git show-ref --tags --verify "refs/tags/$TAG" 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+          Write-Error "Release $TAG already exists. Aborting."
+          exit 1
+        }
+        "tag=$TAG" >> $env:GITHUB_OUTPUT
+        exit 0
+      
+    - name: Build
+      shell: pwsh
+      working-directory: ${{ env.GITHUB_WORKSPACE }}
+      run: ./scripts/build.ps1
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.PROJECT_NAME }}_${{ steps.collect_version.outputs.tag }}
+        path: |
+          ./x64/${{ env.BUILD_CONFIGURATION }}/${{ env.PROJECT_NAME }}.dll
+          ./x64/${{ env.BUILD_CONFIGURATION }}/${{ env.PROJECT_NAME }}.pdb
+          ./${{ env.PROJECT_NAME }}.ini

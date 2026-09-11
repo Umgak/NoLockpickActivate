@@ -1,0 +1,23 @@
+name: "Development build"
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+env:
+  PROJECT_NAME: NoLockpickActivate
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      
+      - name: Build
+        id: build
+        uses: "./.github/actions/build"

@@ -1,0 +1,89 @@
+name: "Release"
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PROJECT_NAME: NoLockpickActivate
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      build-artifact-name: ${{ steps.build.outputs.build-artifact-name }}
+      release-tag: ${{ steps.build.outputs.release-tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      
+      - name: Build
+        id: build
+        uses: "./.github/actions/build"      
+
+  generate-changelog:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    outputs:
+      changelog: ${{ steps.extract_changelog.outputs.changelog }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
+      - name: Extract changelog
+        id: extract_changelog
+        run: |
+          TAG=${{ needs.build.outputs.release-tag }}
+          CHANGELOG=$(awk -v ver="$TAG" '
+            index($0, "## [" ver "]") == 1 {flag=1; next}
+            /^## \[/ {flag=0}
+            flag {print}
+          ' CHANGELOG.md)
+          if [ -z "${CHANGELOG}" ]; then
+            echo "No changelog written for release $TAG. Aborting."
+            exit 1
+          fi
+          {
+            echo 'changelog<<EOF'
+            echo "## Remember Lockpick Angle $TAG"
+            echo "${CHANGELOG}"
+            echo EOF
+          } >> $GITHUB_OUTPUT
+          
+  publish-release:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - generate-changelog
+    permissions:
+      contents: write
+    if: github.event_name == 'push'
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.build-artifact-name }}
+        
+      - name: Create zip
+        run: |
+          mkdir -p SKSE/Plugins
+          cp x64/${{ env.BUILD_CONFIGURATION }}/${{ env.PROJECT_NAME }}.dll SKSE/Plugins
+          cp ${{ env.PROJECT_NAME }}.ini SKSE/Plugins
+          zip -r ${{ needs.build.outputs.build-artifact-name }}.zip SKSE
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: Release ${{ needs.build.outputs.release-tag }}
+          tag_name: ${{ needs.build.outputs.release-tag }}
+          body: ${{ needs.generate-changelog.outputs.changelog }}
+          files: ${{ needs.build.outputs.build-artifact-name }}.zip
