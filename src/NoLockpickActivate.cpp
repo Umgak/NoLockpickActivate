@@ -53,8 +53,8 @@ namespace NoLockpickActivate {
 					rdx = TESObjectREFR* activator
 					r8 = uint8_t unk
 					r9 = TESBoundObject* boundObject
-					[rsp+0x28] = uint32_t count
-					[rsp+0x30] = bool defaultProcessingOnly
+					[rsp+0x20] = uint32_t count
+					[rsp+0x28] = bool defaultProcessingOnly
 				need to shift stack values to compensate for extra variable isKey:
 					[rsp+0x20] = int32_t count
 					[rsp+0x28] = bool defaultProcessingOnly
@@ -64,9 +64,9 @@ namespace NoLockpickActivate {
 				// expand stack shadow space to fit extra variable, keeping 16 byte alignment
 				sub(rsp, 0x40);
 				// grab old args and move them to new stack positions
-				mov(rax, qword[rsp + 0x40 + 0x8]); // int32_t count
+				mov(rax, qword[rsp + 0x40 + 0x20]); // int32_t count
 				mov(qword[rsp + 0x20], rax);
-				mov(rax, qword[rsp + 0x40 + 0x10]); // bool defaultProcessingOnly
+				mov(rax, qword[rsp + 0x40 + 0x28]); // bool defaultProcessingOnly
 				mov(qword[rsp + 0x28], rax);
 				// push isKey onto the stack
 				mov(qword[rsp + 0x30], (isKey) ? 0x1 : 0x0);
