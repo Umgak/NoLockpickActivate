@@ -81,14 +81,6 @@ namespace NoLockpickActivate {
 				dq(entrypoint + 0x5);
 			}
 		};
-		if (!g_branchTrampoline.Create(1024)) {
-			_FATALERROR("[FATAL ERROR] Failed to create branch trampoline.");
-			return false;
-		}
-		if (!g_localTrampoline.Create(1024)) {
-			_FATALERROR("[FATAL ERROR] Failed to create codegen buffer.");
-			return false;
-		}
 		try {
 			void* codeBuf = g_localTrampoline.StartAlloc();
 			if (!codeBuf) return false;
@@ -97,7 +89,7 @@ namespace NoLockpickActivate {
 			g_branchTrampoline.Write5Branch(entrypoint, reinterpret_cast<uintptr_t>(code.getCode()));
 			return true;
 		} catch (std::exception &e) {
-			_FATALERROR("%s", e.what());
+			_FATALERROR("[FATAL ERROR]: %s", e.what());
 			return false;
 		}
 	}
@@ -163,6 +155,15 @@ namespace NoLockpickActivate {
 			return false;
 		} else {
 			_VMESSAGE("[VERBOSE] TESObjectREFR::Activate found at address 0x%p", reinterpret_cast<uintptr_t>(Activate));
+		}
+		// buffer creation
+		if (!g_branchTrampoline.Create(3*14)) {
+			_FATALERROR("[FATAL ERROR] Failed to create branch trampoline.");
+			return false;
+		}
+		if (!g_localTrampoline.Create(3*64)) {
+			_FATALERROR("[FATAL ERROR] Failed to create codegen buffer.");
+			return false;
 		}
 		for (const auto &entry : entries) {
 			if (!_installEntrypoint(entry->address, entry->isKey)) {
