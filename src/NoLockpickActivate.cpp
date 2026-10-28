@@ -81,11 +81,11 @@ namespace NoLockpickActivate {
 				dq(entrypoint + 0x5);
 			}
 		};
-		if (!g_branchTrampoline.Create(14)) {
+		if (!g_branchTrampoline.Create(3*14)) {
 			_FATALERROR("[FATAL ERROR] Failed to create branch trampoline.");
 			return false;
 		}
-		if (!g_localTrampoline.Create(64)) {
+		if (!g_localTrampoline.Create(3*64)) {
 			_FATALERROR("[FATAL ERROR] Failed to create codegen buffer.");
 			return false;
 		}
